@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>银行卡档案册</title>
+
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card-bg: #fff;
+    --line: #e5e5e7;
+    --text-main: #1d1d1f;
+    --text-soft: #6e6e73;
+    --blue: #0071e3;
+    --radius: 12px;
+  }
+
+  body {
+    margin: 0;
+    padding: 32px 16px 60px;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    color: var(--text-main);
+  }
+
+  .page { max-width: 860px; margin: 0 auto; }
+
+  /* 密码锁 */
+  .lock-wrapper {
+    max-width: 380px;
+    margin: 80px auto 0;
+    padding: 26px 22px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+  }
+
+  .lock-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .lock-desc { font-size: 13px; color: var(--text-soft); margin-bottom: 20px; }
+
+  .lock-form { display: flex; gap: 10px; }
+
+  .lock-input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #fafafa;
+  }
+
+  .lock-btn {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--blue);
+    color: white;
+    cursor: pointer;
+  }
+
+  #content { display: none; }
+
+  /* 标题 */
+  header {
+    margin-top: 30px;
+    background: var(--card-bg);
+    padding: 24px 22px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+  }
+
+  h1 { margin: 0 0 6px; font-size: 22px; }
+  .subtitle { font-size: 13px; color: var(--text-soft); }
+
+  /* 折叠区域 */
+  .bank-block { margin-top: 22px; }
+
+  .bank-title {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 14px 6px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .arrow {
+    transition: 0.2s;
+    font-size: 14px;
+  }
+
+  .bank-content {
+    display: none;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 6px;
+  }
+
+  .card-item { margin-bottom: 18px; }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-soft);
+    padding-left: 8px;
+    border-left: 2px solid var(--line);
+    margin-bottom: 6px;
+  }
+
+  .tag-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .tag {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: #f2f2f3;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    color: var(--text-soft);
+    white-space: nowrap;
+  }
+
+  .card-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-number {
+    flex: 1;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+    overflow-wrap: break-word;
+  }
+
+  .copy-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: #f2f2f3;
+    border: 1px solid var(--line);
+    display: flex; justify-content: center; align-items: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+
+  .copy-btn svg {
+    width: 16px; height: 16px;
+    stroke: var(--text-soft); fill: none; stroke-width: 1.6;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%; bottom: 26px;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(40,40,44,0.9);
+    color: white;
+    padding: 9px 20px;
+    border-radius: 16px;
+    opacity: 0;
+    transition: 0.2s ease;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+</style>
+</head>
+
+<body>
+<div class="page">
+
+<!-- 密码 -->
+<div id="lock" class="lock-wrapper">
+  <div class="lock-title">银行卡档案 · 加密视图</div>
+  <div class="lock-desc">请输入访问密码。</div>
+
+  <div class="lock-form">
+    <input id="pwd-input" class="lock-input" type="password" placeholder="请输入密码" />
+    <button class="lock-btn" onclick="unlock()">解锁</button>
+  </div>
+
+  <div id="lock-error" style="height:16px; color:#c0392b; margin-top:8px;"></div>
+</div>
+
+<!-- 内容 -->
+<div id="content">
+
+  <header>
+    <h1>银行卡档案册</h1>
+    <div class="subtitle">把数字放回安静的位置，让生活更有序一些。</div>
+  </header>
+
+  <!-- ===== 工商银行 ===== -->
+  <div class="bank-block">
+    <div class="bank-title" onclick="toggleBank(this)">
+      工商银行 <span class="arrow">▶</span>
+    </div>
+
+    <div class="bank-content">
+      <div class="card-item">
+        <div class="card-desc">定存</div>
+        <div class="card-row">
+          <div class="card-number">6222 0223 0800 5838 524</div>
+          <button class="copy-btn" onclick="copyText('6222022308005838524')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-item">
+        <div class="card-desc">工资卡</div>
+        <div class="card-row">
+          <div class="card-number">6212 2611 0203 9867885</div>
+          <button class="copy-btn" onclick="copyText('6212261102039867785')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 建设银行 ===== -->
+  <div class="bank-block">
+    <div class="bank-title" onclick="toggleBank(this)">
+      建设银行 <span class="arrow">▶</span>
+    </div>
+
+    <div class="bank-content">
+      <div class="card-item">
+        <div class="card-desc">工资卡</div>
+        <div class="card-row">
+          <div class="card-number">6217 0020 0007 7037 879</div>
+          <button class="copy-btn" onclick="copyText('6217002000077037879')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 农业银行 ===== -->
+  <div class="bank-block">
+    <div class="bank-title" onclick="toggleBank(this)">
+      农业银行 <span class="arrow">▶</span>
+    </div>
+
+    <div class="bank-content">
+      <div class="card-item">
+        <div class="card-desc">还款</div>
+        <div class="card-row">
+          <div class="card-number">6228 2102 5900 2098 373</div>
+          <button class="copy-btn" onclick="copyText('6228210259002098373')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 邮储银行 ===== -->
+  <div class="bank-block">
+    <div class="bank-title" onclick="toggleBank(this)">
+      邮政储蓄银行 <span class="arrow">▶</span>
+    </div>
+
+    <div class="bank-content">
+      <div class="card-item">
+        <div class="card-desc">储蓄</div>
+        <div class="card-row">
+          <div class="card-number">6217 9930 0001 4488 798</div>
+          <button class="copy-btn" onclick="copyText('6217993000014488798')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 招商银行 ===== -->
+  <div class="bank-block">
+    <div class="bank-title" onclick="toggleBank(this)">
+      招商银行 <span class="arrow">▶</span>
+    </div>
+
+    <div class="bank-content">
+      <div class="card-item">
+        <div class="card-desc">定存</div>
+        <div class="card-row">
+          <div class="card-number">6214 8352 1938 6727</div>
+          <button class="copy-btn" onclick="copyText('6214835219386727')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-item">
+        <div class="card-desc">水电房租</div>
+        <div class="card-row">
+          <div class="card-number">6214 8352 2857 0873</div>
+          <button class="copy-btn" onclick="copyText('6214835228570873')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-item">
+        <div class="card-desc">虚拟卡 · 深圳</div>
+        <div class="card-row">
+          <div class="card-number">6212 7600 7897 8905</div>
+          <button class="copy-btn" onclick="copyText('6212760078978905')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 兴业银行 ===== -->
+  <div class="bank-block">
+    <div class="bank-title" onclick="toggleBank(this)">
+      兴业银行 <span class="arrow">▶</span>
+    </div>
+
+    <div class="bank-content">
+      <div class="card-item">
+        <div class="card-desc">储蓄</div>
+        <div class="card-row">
+          <div class="card-number">6229 0820 3025 4211 10</div>
+          <button class="copy-btn" onclick="copyText('622908203025421110')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 江苏银行 ===== -->
+  <div class="bank-block">
+    <div class="bank-title" onclick="toggleBank(this)">
+      江苏银行 <span class="arrow">▶</span>
+    </div>
+
+    <div class="bank-content">
+      <div class="card-item">
+        <div class="card-desc">日常</div>
+        <div class="card-row">
+          <div class="card-number">6228 7602 0500 9406 873</div>
+          <button class="copy-btn" onclick="copyText('6228760205009406873')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 中信银行（含三个标签） ===== -->
+  <div class="bank-block">
+    <div class="bank-title" onclick="toggleBank(this)">
+      中信银行 <span class="arrow">▶</span>
+    </div>
+
+    <div class="bank-content">
+
+      <div class="card-item">
+        <div class="tag-row">
+          <div class="tag">虚拟消费</div>
+          <div class="tag">08/30</div>
+          <div class="tag">894</div>
+        </div>
+
+        <div class="card-row">
+          <div class="card-number">5224 0120 0000 9452 8</div>
+          <button class="copy-btn" onclick="copyText('5224012000094528')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const PASSWORD = "7";
+
+  function unlock() {
+    const input = document.getElementById("pwd-input");
+    const error = document.getElementById("lock-error");
+    if (input.value.trim() === PASSWORD) {
+      document.getElementById("lock").style.display = "none";
+      document.getElementById("content").style.display = "block";
+    } else {
+      error.textContent = "密码错误";
+      input.value = "";
+    }
+  }
+
+  function toggleBank(title) {
+    const block = title.nextElementSibling;
+    const arrow = title.querySelector(".arrow");
+
+    if (block.style.display === "block") {
+      block.style.display = "none";
+      arrow.style.transform = "rotate(0deg)";
+    } else {
+      block.style.display = "block";
+      arrow.style.transform = "rotate(90deg)";
+    }
+  }
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("已复制"))
+      .catch(() => showToast("复制失败"));
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 1500);
+  }
+</script>
+
+</body>
+</html>
+
