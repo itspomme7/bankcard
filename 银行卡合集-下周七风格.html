@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>银行卡档案册</title>
+
+<style>
+  :root {
+    --bg-1: #fff8ef;
+    --bg-2: #f5eee5;
+    --bg-3: #eef2ef;
+    --glass: rgba(255, 255, 255, 0.66);
+    --glass-strong: rgba(255, 255, 255, 0.82);
+    --line: rgba(176, 145, 113, 0.20);
+    --text-main: #2e2924;
+    --text-soft: #7b7068;
+    --text-faint: #a1968d;
+    --orange: #d99a68;
+    --orange-soft: #fff0df;
+    --green-soft: #edf3ee;
+    --blue-soft: #edf3f7;
+    --shadow: 0 18px 50px rgba(97, 70, 45, 0.10);
+    --shadow-soft: 0 10px 26px rgba(97, 70, 45, 0.08);
+    --radius-lg: 28px;
+    --radius-md: 20px;
+    --radius-sm: 999px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 26px 14px 56px;
+    color: var(--text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(circle at 10% 8%, rgba(255, 214, 168, 0.66), transparent 34%),
+      radial-gradient(circle at 90% 4%, rgba(218, 229, 214, 0.76), transparent 32%),
+      radial-gradient(circle at 86% 86%, rgba(246, 198, 156, 0.44), transparent 36%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2) 48%, var(--bg-3));
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.28) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.24) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.30), transparent 75%);
+  }
+
+  .page {
+    width: min(940px, 100%);
+    margin: 0 auto;
+  }
+
+  /* 密码锁 */
+  .lock-wrapper {
+    max-width: 390px;
+    margin: 80px auto 0;
+    padding: 28px 24px 24px;
+    background: var(--glass-strong);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+
+  .lock-title {
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+
+  .lock-desc {
+    font-size: 13px;
+    color: var(--text-soft);
+    margin-bottom: 20px;
+    line-height: 1.7;
+  }
+
+  .lock-form {
+    display: flex;
+    gap: 10px;
+  }
+
+  .lock-input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px;
+    border-radius: 15px;
+    border: 1px solid rgba(176, 145, 113, 0.22);
+    background: rgba(255,255,255,0.74);
+    outline: none;
+    font-size: 14px;
+    color: var(--text-main);
+  }
+
+  .lock-input:focus {
+    border-color: rgba(217, 154, 104, 0.72);
+    box-shadow: 0 0 0 4px rgba(217, 154, 104, 0.13);
+  }
+
+  .lock-btn {
+    padding: 0 18px;
+    border-radius: 15px;
+    border: none;
+    background: linear-gradient(135deg, #e5ad7b, #c98255);
+    color: #fff;
+    font-weight: 650;
+    cursor: pointer;
+    box-shadow: 0 12px 24px rgba(201, 130, 85, 0.22);
+  }
+
+  #lock-error {
+    min-height: 18px;
+    color: #b56a5d;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  #content { display: none; }
+
+  /* 顶部 */
+  .hero {
+    margin-top: 18px;
+    padding: 28px 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.76);
+    background: linear-gradient(135deg, rgba(255,255,255,0.78), rgba(255,247,237,0.58));
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    width: 170px;
+    height: 170px;
+    right: -56px;
+    top: -58px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(236, 175, 118, 0.30), transparent 68%);
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 240, 223, 0.88);
+    border: 1px solid rgba(217, 154, 104, 0.22);
+    color: #9a6847;
+    font-size: 12px;
+    font-weight: 650;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(25px, 5vw, 36px);
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+  }
+
+  .subtitle {
+    margin-top: 10px;
+    max-width: 520px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-soft);
+  }
+
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .summary-card {
+    padding: 14px 14px 13px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.56);
+    border: 1px solid rgba(255,255,255,0.70);
+  }
+
+  .summary-num {
+    font-size: 19px;
+    font-weight: 760;
+    letter-spacing: -0.03em;
+  }
+
+  .summary-label {
+    margin-top: 3px;
+    font-size: 12px;
+    color: var(--text-soft);
+  }
+
+  /* 银行列表 */
+  .bank-list {
+    margin-top: 18px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .bank-section {
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.70);
+    background: var(--glass);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+
+  .bank-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 2px 2px 14px;
+  }
+
+  .bank-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 760;
+    letter-spacing: -0.02em;
+  }
+
+  .bank-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e7b47d, #c88964);
+    box-shadow: 0 0 0 6px rgba(217, 154, 104, 0.14);
+    flex-shrink: 0;
+  }
+
+  .bank-count {
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.58);
+    color: var(--text-soft);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .card-item {
+    position: relative;
+    min-height: 128px;
+    padding: 15px;
+    border-radius: var(--radius-md);
+    background:
+      linear-gradient(145deg, rgba(255,255,255,0.84), rgba(255,248,241,0.62));
+    border: 1px solid rgba(255,255,255,0.78);
+    overflow: hidden;
+  }
+
+  .card-item::after {
+    content: "";
+    position: absolute;
+    width: 92px;
+    height: 92px;
+    right: -32px;
+    bottom: -34px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(217, 154, 104, 0.16), transparent 70%);
+  }
+
+  .meta-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 13px;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 5px 9px;
+    border-radius: var(--radius-sm);
+    background: rgba(246, 242, 236, 0.86);
+    border: 1px solid rgba(176, 145, 113, 0.15);
+    color: var(--text-soft);
+    font-size: 12px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .tag.primary {
+    background: var(--orange-soft);
+    color: #9c6742;
+    border-color: rgba(217, 154, 104, 0.18);
+  }
+
+  .tag.secondary {
+    background: var(--blue-soft);
+    color: #5f7580;
+    border-color: rgba(113, 145, 159, 0.14);
+  }
+
+  .tag.first-class {
+    background: var(--green-soft);
+    color: #667765;
+    border-color: rgba(122, 146, 119, 0.14);
+  }
+
+  .card-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .card-number {
+    flex: 1;
+    min-width: 0;
+    font-size: 17px;
+    line-height: 1.5;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+    color: #342f2a;
+  }
+
+  .copy-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    border: 1px solid rgba(176, 145, 113, 0.18);
+    background: rgba(255,255,255,0.72);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  }
+
+  .copy-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(97, 70, 45, 0.10);
+    background: #fff;
+  }
+
+  .copy-btn svg {
+    width: 17px;
+    height: 17px;
+    stroke: var(--text-soft);
+    fill: none;
+    stroke-width: 1.7;
+  }
+
+  .note {
+    margin: 18px 3px 0;
+    color: var(--text-faint);
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: center;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(46, 41, 36, 0.88);
+    color: white;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    transition: 0.2s ease;
+    font-size: 13px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 99;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 18px 12px 44px; }
+    .hero { padding: 24px 20px; border-radius: 25px; }
+    .summary-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .summary-card { padding: 12px 10px; }
+    .summary-num { font-size: 17px; }
+    .summary-label { font-size: 11px; }
+    .bank-section { padding: 15px; border-radius: 24px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .card-number { font-size: 16px; }
+  }
+</style>
+</head>
+
+<body>
+<div class="page">
+
+<!-- 密码 -->
+<div id="lock" class="lock-wrapper">
+  <div class="lock-title">银行卡档案 · 加密视图</div>
+  <div class="lock-desc">请输入访问密码，进入你的私人卡片合集。</div>
+
+  <div class="lock-form">
+    <input id="pwd-input" class="lock-input" type="password" placeholder="请输入密码" autocomplete="current-password" />
+    <button class="lock-btn" onclick="unlock()">解锁</button>
+  </div>
+
+  <div id="lock-error"></div>
+</div>
+
+<!-- 内容 -->
+<div id="content">
+
+  <header class="hero">
+    <div class="eyebrow">Personal Bank Cards</div>
+    <h1>银行卡档案册</h1>
+    <div class="subtitle">把常用卡、定存卡和虚拟卡收进一个安静的页面里。信息清楚一点，生活也就松一点。</div>
+
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="summary-num">8</div>
+        <div class="summary-label">家银行</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-num">11</div>
+        <div class="summary-label">张卡片</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-num">✓</div>
+        <div class="summary-label">类别已标注</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="bank-list">
+
+    <!-- ===== 工商银行 ===== -->
+    <section class="bank-section">
+      <div class="bank-head">
+        <div class="bank-name"><span class="bank-dot"></span>工商银行</div>
+        <div class="bank-count">2 张</div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">定存</span>
+            <span class="tag first-class">一类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6222 0223 0800 5838 524</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('6222022308005838524')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">工资卡</span>
+            <span class="tag secondary">二类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6212 2611 0203 9867885</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('6212261102039867885')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 建设银行 ===== -->
+    <section class="bank-section">
+      <div class="bank-head">
+        <div class="bank-name"><span class="bank-dot"></span>建设银行</div>
+        <div class="bank-count">1 张</div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">定存</span>
+            <span class="tag first-class">一类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6217 0020 0007 7037 879</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('6217002000077037879')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 农业银行 ===== -->
+    <section class="bank-section">
+      <div class="bank-head">
+        <div class="bank-name"><span class="bank-dot"></span>农业银行</div>
+        <div class="bank-count">1 张</div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">还款</span>
+            <span class="tag first-class">一类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6228 2102 5900 2098 373</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('6228210259002098373')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 邮储银行 ===== -->
+    <section class="bank-section">
+      <div class="bank-head">
+        <div class="bank-name"><span class="bank-dot"></span>邮政储蓄银行</div>
+        <div class="bank-count">1 张</div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">储蓄</span>
+            <span class="tag first-class">一类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6217 9930 0001 4488 798</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('6217993000014488798')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 招商银行 ===== -->
+    <section class="bank-section">
+      <div class="bank-head">
+        <div class="bank-name"><span class="bank-dot"></span>招商银行</div>
+        <div class="bank-count">3 张</div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">定存</span>
+            <span class="tag first-class">一类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6214 8352 1938 6727</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('6214835219386727')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">房租水电</span>
+            <span class="tag secondary">二类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6214 8352 2857 0873</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('6214835228570873')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">虚拟卡 · 深圳</span>
+            <span class="tag first-class">二类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6212 7600 7897 8905</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('6212760078978905')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 兴业银行 ===== -->
+    <section class="bank-section">
+      <div class="bank-head">
+        <div class="bank-name"><span class="bank-dot"></span>兴业银行</div>
+        <div class="bank-count">1 张</div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">储蓄</span>
+            <span class="tag first-class">一类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6229 0820 3025 4211 10</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('622908203025421110')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 江苏银行 ===== -->
+    <section class="bank-section">
+      <div class="bank-head">
+        <div class="bank-name"><span class="bank-dot"></span>江苏银行</div>
+        <div class="bank-count">1 张</div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">日常</span>
+            <span class="tag first-class">一类卡</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">6228 7602 0500 9406 873</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('6228760205009406873')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 中信银行 ===== -->
+    <section class="bank-section">
+      <div class="bank-head">
+        <div class="bank-name"><span class="bank-dot"></span>中信银行</div>
+        <div class="bank-count">1 张</div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card-item">
+          <div class="meta-row">
+            <span class="tag primary">虚拟消费</span>
+            <span class="tag secondary">二类卡</span>
+            <span class="tag">08/30</span>
+            <span class="tag">894</span>
+          </div>
+          <div class="card-row">
+            <div class="card-number">5224 0120 0000 9452 8</div>
+            <button class="copy-btn" aria-label="复制卡号" onclick="copyText('52240120000094528')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="note">只做个人归档使用。点击右侧按钮即可复制对应卡号。</div>
+
+</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const PASSWORD = "7";
+
+  function unlock() {
+    const input = document.getElementById("pwd-input");
+    const error = document.getElementById("lock-error");
+
+    if (input.value.trim() === PASSWORD) {
+      document.getElementById("lock").style.display = "none";
+      document.getElementById("content").style.display = "block";
+    } else {
+      error.textContent = "密码错误";
+      input.value = "";
+    }
+  }
+
+  document.getElementById("pwd-input").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") unlock();
+  });
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("已复制"))
+      .catch(() => showToast("复制失败"));
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 1500);
+  }
+</script>
+
+</body>
+</html>
